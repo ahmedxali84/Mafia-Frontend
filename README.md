@@ -28,7 +28,7 @@ then **Players → Join voice**. Use headphones on one PC to avoid echo.
 
 | Name | Required | Description |
 |---|---|---|
-| `NEXT_PUBLIC_SERVER_URL` | yes | Public URL of `mafia-backend`, no trailing slash (e.g. `https://mafia-backend.onrender.com`) |
+| `NEXT_PUBLIC_SERVER_URL` | no | URL of `mafia-backend`. Defaults: `http://localhost:4000` in dev, `https://mafia-backend-z04f.onrender.com` in production builds |
 
 It is baked in at build time: after changing it on the host, **redeploy**.
 
@@ -36,8 +36,8 @@ It is baked in at build time: after changing it on the host, **redeploy**.
 
 1. Push this repo to GitHub.
 2. Vercel → Add New → Project → import the repo (framework: Next.js, root: `/`).
-3. Environment variable `NEXT_PUBLIC_SERVER_URL` = your backend URL.
-4. Deploy. Then set the backend's `CLIENT_ORIGIN` to this site's URL.
+3. Production builds use `https://mafia-backend-z04f.onrender.com` by default; set `NEXT_PUBLIC_SERVER_URL` only to point at a different backend.
+4. Deploy. The backend already allows `https://mafia-frontend-lyart.vercel.app`; a different domain must be added to the backend's `CLIENT_ORIGIN`.
 
 Any Node host also works: `npm ci && npm run build && npm start`.
 
