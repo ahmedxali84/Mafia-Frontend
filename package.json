@@ -1,0 +1,20 @@
+{
+  "name": "mafia-frontend",
+  "version": "1.0.0",
+  "description": "Multiplayer Mafia game client (Next.js) with in-game voice chat",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start"
+  },
+  "dependencies": {
+    "next": "^16.3.8",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0",
+    "socket.io-client": "^4.8.4"
+  },
+  "private": true,
+  "engines": {
+    "node": ">=20.9"
+  }
+}
