@@ -16,6 +16,7 @@ export default function Embers3D() {
     const cv = ref.current;
     const ctx = cv.getContext('2d');
     const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const small = innerWidth < 700 || matchMedia('(hover: none)').matches; // phones: fewer embers, no glow pass
     embers.target = 1;
     let w = 0, h = 0, raf = 0, mx = 0, my = 0, camX = 0, camY = 0;
 
@@ -31,10 +32,10 @@ export default function Embers3D() {
       p.sx = null;
       return p;
     };
-    const pts = Array.from({ length: innerWidth < 700 ? 70 : 160 }, () => spawn({}, true));
+    const pts = Array.from({ length: small ? 40 : 160 }, () => spawn({}, true));
 
     const size = () => {
-      const dpr = Math.min(devicePixelRatio || 1, 1.5);
+      const dpr = small ? 1 : Math.min(devicePixelRatio || 1, 1.5);
       w = innerWidth;
       h = innerHeight;
       cv.width = w * dpr;
@@ -76,10 +77,12 @@ export default function Embers3D() {
           ctx.lineTo(sx, sy);
           ctx.stroke();
         } else {
-          ctx.fillStyle = `rgba(${p.c}, ${a * flick * 0.16})`;
-          ctx.beginPath();
-          ctx.arc(sx, sy, r * 3.2, 0, Math.PI * 2);
-          ctx.fill();
+          if (!small) {
+            ctx.fillStyle = `rgba(${p.c}, ${a * flick * 0.16})`;
+            ctx.beginPath();
+            ctx.arc(sx, sy, r * 3.2, 0, Math.PI * 2);
+            ctx.fill();
+          }
           ctx.fillStyle = `rgba(${p.c}, ${a * flick})`;
           ctx.beginPath();
           ctx.arc(sx, sy, r, 0, Math.PI * 2);

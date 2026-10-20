@@ -569,3 +569,9 @@
 .powered.corner { position: fixed; right: 18px; bottom: 16px; z-index: 21; padding: 6px 10px; background: rgba(7, 4, 5, 0.6); border: 1px solid var(--line); }
 .cine.leaving .powered.corner { opacity: 0; transition: opacity 0.35s; }
 @media (max-width: 560px) { .powered.corner { top: 62px; bottom: auto; right: 12px; letter-spacing: 0.2em; } }
+
+/* Phones / touch screens: no live blur behind the sticky bars, no blended grain layer. */
+@media (hover: none), (max-width: 760px) {
+  .hud, .menubar, .dlg-back { backdrop-filter: none; }
+  .bd-vig::after { display: none; }
+}

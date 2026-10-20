@@ -11,6 +11,8 @@ import Cursor from '@/components/Cursor';
 import HowToPlay from '@/components/HowToPlay';
 import SoundToggle from '@/components/SoundToggle';
 import PoweredBy from '@/components/PoweredBy';
+import RoleIcon from '@/components/RoleIcon';
+import { ROLES } from '@/lib/roles';
 
 const CAPS = [
   ['Chapter I', 'The city sleeps.', 'One table. One secret. Nobody is who they seem.'],
@@ -20,12 +22,12 @@ const CAPS = [
 ];
 const EDGES = [0, 0.25, 0.5, 0.75, 1.1];
 
-// Playing cards orbiting the logo: rank, suit, red?, resting spot (fraction of the viewport), depth, tilt.
+// Role cards orbiting the logo: role, resting spot (fraction of the viewport), depth, tilt.
 const CARDS = [
-  ['A', '♠', false, -0.34, -0.2, 140, -18],
-  ['A', '♥', true, 0.34, 0.16, 80, 22],
-  ['K', '♣', false, -0.27, 0.27, -140, -10],
-  ['Q', '♦', true, 0.29, -0.27, -80, 14],
+  ['MAFIA', -0.34, -0.2, 140, -18],
+  ['DOCTOR', 0.34, 0.16, 80, 22],
+  ['VILLAGER', -0.27, 0.27, -140, -10],
+  ['DETECTIVE', 0.29, -0.27, -80, 14],
 ];
 
 export default function Home() {
@@ -87,9 +89,9 @@ export default function Home() {
         .to(logo.current, { scale: 1.06, duration: 0.4 }, 0.6)
         .fromTo(spot.current, { '--r': '6%' }, { '--r': '62%', duration: 0.6 }, 0)
         .fromTo(cards,
-          { autoAlpha: 0, z: -1100, x: (i) => CARDS[i][3] * innerWidth * 0.3, y: (i) => CARDS[i][4] * innerHeight * 0.3, rotationY: (i) => (i % 2 ? 170 : -170), rotationZ: 0 },
-          { autoAlpha: 1, z: (i) => CARDS[i][5], x: (i) => CARDS[i][3] * innerWidth, y: (i) => CARDS[i][4] * innerHeight, rotationY: (i) => CARDS[i][6], rotationZ: (i) => CARDS[i][6] / 2, duration: 0.45, stagger: 0.05 }, 0.12)
-        .to(cards, { y: (i) => CARDS[i][4] * innerHeight + (i % 2 ? -50 : 50), rotationX: (i) => (i % 2 ? 16 : -16), duration: 0.4 }, 0.6)
+          { autoAlpha: 0, z: -1100, x: (i) => CARDS[i][2] * innerWidth * 0.3, y: (i) => CARDS[i][3] * innerHeight * 0.3, rotationY: (i) => (i % 2 ? 170 : -170), rotationZ: 0 },
+          { autoAlpha: 1, z: (i) => CARDS[i][4], x: (i) => CARDS[i][2] * innerWidth, y: (i) => CARDS[i][3] * innerHeight, rotationY: (i) => CARDS[i][5], rotationZ: (i) => CARDS[i][5] / 2, duration: 0.45, stagger: 0.05 }, 0.12)
+        .to(cards, { y: (i) => CARDS[i][3] * innerHeight + (i % 2 ? -50 : 50), rotationX: (i) => (i % 2 ? 16 : -16), duration: 0.4 }, 0.6)
         .fromTo(bar.current, { scaleX: 0 }, { scaleX: 1, duration: 1 }, 0);
 
       if (!reduced()) {
@@ -144,11 +146,11 @@ export default function Home() {
         <div className="stage">
           <div ref={rig} className="rig">
             <div className="halo" />
-            {CARDS.map(([rank, suit, red], i) => (
-              <div key={i} className={`k ${red ? 'red' : ''}`} aria-hidden="true">
-                <b>{rank}<br />{suit}</b>
-                <span>{suit}</span>
-                <b className="k-flip">{rank}<br />{suit}</b>
+            {CARDS.map(([role], i) => (
+              <div key={role} className={`k tone-${ROLES[role].tone}`} aria-hidden="true">
+                <b><RoleIcon role={role} /></b>
+                <span><RoleIcon role={role} /></span>
+                <i>{ROLES[role].label}</i>
               </div>
             ))}
             {/* eslint-disable-next-line @next/next/no-img-element */}
