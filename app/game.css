@@ -325,6 +325,7 @@
 .intel.good > .ic { color: var(--ok); }
 .intel.bad { border-left-color: var(--accent); }
 .intel.bad > .ic { color: var(--red-text); }
+.intel > svg:first-child { flex: none; font-size: 1.25em; }
 .intel.theft { border-left-color: #4fbfae; }
 .intel.theft > .ic, .intel.theft > svg:first-child { color: #4fbfae; }
 .tl-theft { display: inline-flex; align-items: center; gap: 4px; margin-left: 8px; color: #4fbfae; font-size: 0.85em; }

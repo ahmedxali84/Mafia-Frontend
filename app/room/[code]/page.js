@@ -7,7 +7,7 @@ import { useVoice } from '@/lib/useVoice';
 import { emit, setName, socket } from '@/lib/socket';
 import { play } from '@/lib/sound';
 import { recordGame } from '@/lib/stats';
-import { ROLES, mafiaCount, roleMix } from '@/lib/roles';
+import { ROLES, roleInfo, mafiaCount, roleMix } from '@/lib/roles';
 import Backdrop from '@/components/Backdrop';
 import Timer from '@/components/Timer';
 import Chat from '@/components/Chat';
@@ -405,7 +405,7 @@ function Lobby({ state }) {
             </li>
           )))}
         </ul>
-        <RoleMix n={n} />
+        <RoleMix n={n} extras={state.extraRoles || []} />
       </section>
 
       {isHost ? (
@@ -430,8 +430,8 @@ function Lobby({ state }) {
 }
 
 // The roles that will be dealt for the current head count.
-function RoleMix({ n }) {
-  const mix = roleMix(Math.max(n, 5));
+function RoleMix({ n, extras }) {
+  const mix = roleMix(Math.max(n, 5), extras);
   return (
     <div className="mix">
       <span className="label">Roles this game{n < 5 ? ' (at 5 players)' : ''}</span>
@@ -446,7 +446,7 @@ function RoleMix({ n }) {
 
 function RoleReveal({ state }) {
   const { role } = state.you;
-  const info = ROLES[role];
+  const info = roleInfo(role);
   const [flipped, setFlipped] = useState(false);
   const mates = state.players.filter((p) => p.role === 'MAFIA' && p.id !== state.you.id);
   const m = mafiaCount(state.players.length);
@@ -479,7 +479,7 @@ function RoleReveal({ state }) {
 function Night({ state }) {
   const { you, players } = state;
   const [err, setErr] = useState('');
-  const info = ROLES[you.role];
+  const info = roleInfo(you.role);
 
   async function pick(targetId) {
     const res = await emit('night_action', { targetId });
@@ -576,6 +576,7 @@ function Discussion({ state }) {
       <Notice icon="chat" label="Discussion" title="Who is the Mafia?" text="Talk it out in the chat. Voting opens when the timer runs out — or sooner, if most of the table wants to vote now.">
         {!you.alive && <p className="intel"><Icon name="skull" /> <span>You are dead — only ghosts can see your messages.</span></p>}
         {you.alive && you.role === 'JESTER' && <p className="intel"><RoleIcon role="JESTER" /> <span>Play guilty. If the town votes you out, you win.</span></p>}
+        <Theft you={you} players={players} day={state.day} />
         <div className="ready-vote">
           {you.alive && (
             <button className={`b ${imReady ? 'b-ghost' : 'b-primary'}`} onClick={ready} aria-pressed={imReady}>
