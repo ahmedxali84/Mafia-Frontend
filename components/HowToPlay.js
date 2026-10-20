@@ -5,7 +5,7 @@ import Icon from './Icon';
 import RoleIcon from './RoleIcon';
 
 const ROUND = [
-  ['moon', 'Night', 'Mafia pick a victim. The Doctor protects someone. The Detective investigates someone.'],
+  ['moon', 'Night', 'Mafia pick a victim. The Doctor protects someone. The Detective investigates someone. On the first night the Thief steals a role.'],
   ['sun', 'Morning', 'The town learns who, if anyone, died — and what role they had.'],
   ['chat', 'Discussion', 'Talk it out. Share suspicions, defend yourself, whisper a secret. If most of the table hits Vote now, the timer stops and voting starts.'],
   ['ballot', 'Vote', 'Most votes is eliminated; a majority ends the day at once. A tie means nobody goes.'],
@@ -65,6 +65,7 @@ export default function HowToPlay({ onClose }) {
             <div className="win-rules">
               <p><b className="t-gold">Town wins</b> when every Mafia member is gone.</p>
               <p><b className="t-red">Mafia win</b> when they equal or outnumber everyone else.</p>
+              <p><b className="t-jester">The Jester wins</b> alone, the moment the town votes them out.</p>
             </div>
           </div>
         </div>

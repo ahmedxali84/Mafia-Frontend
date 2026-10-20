@@ -7,7 +7,7 @@ import { useVoice } from '@/lib/useVoice';
 import { emit, setName, socket } from '@/lib/socket';
 import { play } from '@/lib/sound';
 import { recordGame } from '@/lib/stats';
-import { ROLES } from '@/lib/roles';
+import { ROLES, mafiaCount, roleMix } from '@/lib/roles';
 import Backdrop from '@/components/Backdrop';
 import Timer from '@/components/Timer';
 import Chat from '@/components/Chat';
@@ -36,8 +36,6 @@ const PHASE = {
 };
 const DAYTIME = ['DAY_RESULT', 'DISCUSSION', 'VOTING', 'VOTE_RESULT'];
 const ROUND = ['NIGHT', 'DAY_RESULT', 'DISCUSSION', 'VOTING', 'VOTE_RESULT'];
-// Mirrors the server's role assignment (server/game/roles.js).
-const mafiaCount = (n) => (n <= 6 ? 1 : n <= 9 ? 2 : 3);
 
 // True on layouts wide enough to show the game and the side rail together (matches game.css).
 function useWide() {
@@ -332,6 +330,7 @@ function Timeline({ history }) {
                 ? <><b>{e.name}</b> {night ? 'was killed' : 'was voted out'} <RoleTag role={e.role} /></>
                 : night ? (e.saved ? <><Icon name="shield" /> The Doctor saved the target</> : 'A quiet night')
                 : e.tie ? 'A tie — nobody went' : 'Nobody was voted out'}
+              {e.theft && <span className="tl-theft"><RoleIcon role="THIEF" /> A role was stolen</span>}
             </span>
           </li>
         );
@@ -432,9 +431,7 @@ function Lobby({ state }) {
 
 // The roles that will be dealt for the current head count.
 function RoleMix({ n }) {
-  const seats = Math.max(n, 5);
-  const m = mafiaCount(seats);
-  const mix = [['MAFIA', m], ['DOCTOR', 1], ['DETECTIVE', 1], ['VILLAGER', seats - m - 2]];
+  const mix = roleMix(Math.max(n, 5));
   return (
     <div className="mix">
       <span className="label">Roles this game{n < 5 ? ' (at 5 players)' : ''}</span>
@@ -490,9 +487,9 @@ function Night({ state }) {
   }
 
   if (!you.alive) return <Notice icon="skull" label="Night" title="You are dead" text="Watch quietly. You can talk with the other ghosts in the chat." />;
-  if (!info.night) return <Notice icon="moon" label="Night" title="The town sleeps" text="Close your eyes. The Mafia, the Doctor and the Detective are making their moves." />;
+  if (!info.night) return <Notice icon="moon" label="Night" title="The town sleeps" text={you.role === 'JESTER' ? 'Rest up. Tomorrow you need the town to think you are the Mafia.' : 'Close your eyes. The Mafia, the Doctor and the Detective are making their moves.'} />;
 
-  const exclude = you.role === 'MAFIA' ? players.filter((p) => p.role === 'MAFIA').map((p) => p.id) : you.role === 'DETECTIVE' ? [you.id] : [];
+  const exclude = you.role === 'MAFIA' ? players.filter((p) => p.role === 'MAFIA').map((p) => p.id) : ['DETECTIVE', 'THIEF'].includes(you.role) ? [you.id] : [];
   const lastCheck = you.checks[you.checks.length - 1];
   const marks = {};
   for (const [mateId, targetId] of Object.entries(you.mafiaPicks || {})) {
@@ -507,6 +504,7 @@ function Night({ state }) {
         <h2 className="h-lg">{info.night.prompt}</h2>
       </div>
       {you.role === 'DETECTIVE' && lastCheck && <Intel check={lastCheck} players={players} />}
+      {you.role === 'THIEF' && <p className="intel"><RoleIcon role="THIEF" /> <span>You take their role at dawn and they become a Villager. Rob tonight’s victim and you get nothing.</span></p>}
       <TargetGrid players={players} youId={you.id} hostId={state.hostId} exclude={exclude} selectedId={you.nightTarget} onPick={pick} verb={info.night.verb} tone={info.tone} marks={marks} />
       <p className="status-line">
         {you.nightTarget ? <><Icon name="check" /> Locked in — you can change it until the timer ends.</> : 'Select a player.'}
@@ -535,8 +533,32 @@ function DayResult({ state }) {
     >
       {dead && <p className="reveal-role">They were <RoleTag role={r.killedRole} /></p>}
       {detCheck && <Intel check={detCheck} players={state.players} />}
+      {r?.theft && <p className="intel theft"><RoleIcon role="THIEF" /> <span>A thief struck in the night. Someone at this table is no longer who they were.</span></p>}
+      <Theft you={state.you} players={state.players} day={state.day} />
     </Notice>
   );
+}
+
+// Private news of the night's theft, for the Thief and for their victim.
+function Theft({ you, players, day }) {
+  if (you.stole?.day === day) {
+    const mark = players.find((p) => p.id === you.stole.targetId)?.name || '?';
+    return (
+      <p className="intel theft">
+        <RoleIcon role="THIEF" />
+        <span>You robbed <b>{mark}</b>. You are now the <RoleTag role={you.stole.role} />{you.stole.role === 'MAFIA' ? ' Your new family knows you.' : ''}</span>
+      </p>
+    );
+  }
+  if (you.robbed?.day === day) {
+    return (
+      <p className="intel bad">
+        <RoleIcon role="THIEF" />
+        <span>Your role was stolen. You were the <RoleTag role={you.robbed.role} /> and woke up a plain Villager.</span>
+      </p>
+    );
+  }
+  return null;
 }
 
 function Discussion({ state }) {
@@ -553,6 +575,7 @@ function Discussion({ state }) {
     <div className="stack">
       <Notice icon="chat" label="Discussion" title="Who is the Mafia?" text="Talk it out in the chat. Voting opens when the timer runs out — or sooner, if most of the table wants to vote now.">
         {!you.alive && <p className="intel"><Icon name="skull" /> <span>You are dead — only ghosts can see your messages.</span></p>}
+        {you.alive && you.role === 'JESTER' && <p className="intel"><RoleIcon role="JESTER" /> <span>Play guilty. If the town votes you out, you win.</span></p>}
         <div className="ready-vote">
           {you.alive && (
             <button className={`b ${imReady ? 'b-ghost' : 'b-primary'}`} onClick={ready} aria-pressed={imReady}>
@@ -670,13 +693,16 @@ function VoteResult({ state }) {
 function GameOver({ state }) {
   const isHost = state.hostId === state.you.id;
   const won = state.winner === state.you.team;
+  const jester = state.winner === 'JESTER' ? state.players.find((p) => p.id === state.result?.eliminatedId) : null;
   return (
     <div className="stack">
       <section className={`panel cut finale ${won ? 'won' : 'lost'}`}>
         <span className="label">Game over{state.day > 0 ? ` · Day ${state.day}` : ''}</span>
         <h1 className="finale-title">{won ? 'Victory' : 'Defeat'}</h1>
-        <p className={`finale-sub ${state.winner === 'MAFIA' ? 't-red' : 't-gold'}`}>
-          {state.winner === 'MAFIA' ? 'The Mafia take the town' : 'The town is safe — the Villagers win'}
+        <p className={`finale-sub ${state.winner === 'MAFIA' ? 't-red' : state.winner === 'JESTER' ? 't-jester' : 't-gold'}`}>
+          {state.winner === 'MAFIA' ? 'The Mafia take the town'
+            : state.winner === 'JESTER' ? `The joke’s on you — ${jester?.name || 'the Jester'} was the Jester and wins alone`
+            : 'The town is safe — the Villagers win'}
         </p>
         <div className="finale-actions">
           {isHost

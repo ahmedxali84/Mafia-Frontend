@@ -40,6 +40,7 @@
 .err { margin: 0; color: #ff6b6f; font-size: 0.88rem; }
 .t-gold { color: var(--gold); }
 .t-red { color: var(--red-text); }
+.t-jester { color: #c99be8; }
 .t-ok { color: var(--ok); }
 .t-warn { color: var(--gold); }
 .hide { display: none !important; }
@@ -55,6 +56,8 @@
 .tone-doctor { --tone: #6fbf8e; }
 .tone-detective { --tone: #6f9bd0; }
 .tone-villager, .tone-vote { --tone: #e0a84a; }
+.tone-jester { --tone: #b884e0; }
+.tone-thief { --tone: #4fbfae; }
 
 /* ───────── Chamfered surface: --edge draws a 1px rim, --fill the face, --c the corner cut ───────── */
 .cut { --c: 12px; --edge: var(--line2); --fill: var(--panel-fill); }
@@ -322,6 +325,9 @@
 .intel.good > .ic { color: var(--ok); }
 .intel.bad { border-left-color: var(--accent); }
 .intel.bad > .ic { color: var(--red-text); }
+.intel.theft { border-left-color: #4fbfae; }
+.intel.theft > .ic, .intel.theft > svg:first-child { color: #4fbfae; }
+.tl-theft { display: inline-flex; align-items: center; gap: 4px; margin-left: 8px; color: #4fbfae; font-size: 0.85em; }
 .intel-list { display: grid; gap: 8px; }
 .intel-list .intel { max-width: none; }
 .action { gap: 16px; }
