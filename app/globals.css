@@ -39,10 +39,10 @@ button { font-family: inherit; }
 /* Animated night scene: sky, skyline, street lamp, wet street in perspective, fog, rain, 3D embers, grain */
 .scene { position: fixed !important; inset: 0; z-index: 0 !important; overflow: hidden; pointer-events: none; perspective: 900px; }
 .night-sky { position: absolute; inset: 0; background: radial-gradient(ellipse at 75% 0%, #3a0a0e 0%, #14080a 45%, #070405 100%); }
-.stars { position: absolute; inset: 0; background-repeat: repeat; filter: saturate(0) brightness(0.7); animation: twinkle 4s ease-in-out infinite alternate; }
+.stars { position: absolute; inset: 0; background-repeat: repeat; opacity: 0.7; animation: twinkle 4s ease-in-out infinite alternate; }
 .stars.s1 { background-image: radial-gradient(1.5px 1.5px at 20px 30px, #fff, transparent), radial-gradient(1px 1px at 90px 80px, #cfd6ff, transparent), radial-gradient(1.5px 1.5px at 160px 20px, #fff, transparent), radial-gradient(1px 1px at 230px 120px, #fff, transparent); background-size: 260px 160px; }
-.stars.s2 { background-image: radial-gradient(1px 1px at 50px 100px, #fff, transparent), radial-gradient(2px 2px at 140px 60px, #ffe9a8, transparent), radial-gradient(1px 1px at 200px 150px, #fff, transparent); background-size: 310px 200px; animation-delay: -2s; animation-duration: 6s; }
-@keyframes twinkle { from { opacity: 0.45; } to { opacity: 1; } }
+.stars.s2 { background-image: radial-gradient(1px 1px at 50px 100px, #fff, transparent), radial-gradient(2px 2px at 140px 60px, #e8e3d6, transparent), radial-gradient(1px 1px at 200px 150px, #fff, transparent); background-size: 310px 200px; animation-delay: -2s; animation-duration: 6s; }
+@keyframes twinkle { from { opacity: 0.3; } to { opacity: 0.7; } }
 .moon { position: absolute; top: 5%; right: 4%; width: 72px; height: 72px; opacity: 0.8; border-radius: 50%; background: radial-gradient(circle at 35% 35%, #ffe3dc, #d3202a 70%, #7a0d13);
   box-shadow: 0 0 70px 20px rgba(211, 32, 42, 0.35), inset -12px -10px 24px rgba(60, 0, 4, 0.75); animation: bob 9s ease-in-out infinite; }
 @keyframes bob { 50% { transform: translateY(10px); } }
@@ -67,10 +67,12 @@ button { font-family: inherit; }
   background: radial-gradient(ellipse 22% 40% at 20% 60%, rgba(150, 110, 110, 0.18), transparent 70%), radial-gradient(ellipse 25% 35% at 55% 50%, rgba(120, 80, 80, 0.16), transparent 70%), radial-gradient(ellipse 20% 45% at 85% 65%, rgba(150, 110, 110, 0.14), transparent 70%); }
 .fog.f2 { bottom: 0; opacity: 0.4; animation-duration: 60s; animation-direction: reverse; }
 @keyframes fog { to { transform: translateX(25%); } }
-.rain { position: absolute; inset: -20% 0 0; opacity: 0.2; background-size: 100% 140px; animation: rain 0.55s linear infinite;
-  background-image: repeating-linear-gradient(104deg, transparent 0 18px, rgba(220, 200, 200, 0.5) 18px 19px, transparent 19px 41px);
+/* The streaks live on a layer that slides with transform (GPU only); repainting the background every frame was too slow on phones. */
+.rain { position: absolute; inset: -20% 0 0; overflow: hidden; opacity: 0.2;
   -webkit-mask: linear-gradient(transparent, #000 25%, #000 70%, transparent); mask: linear-gradient(transparent, #000 25%, #000 70%, transparent); }
-@keyframes rain { to { background-position: -36px 140px; } }
+.rain::before { content: ''; position: absolute; top: -140px; left: 0; right: -36px; bottom: 0; will-change: transform; animation: rain 0.55s linear infinite;
+  background: repeating-linear-gradient(104deg, transparent 0 18px, rgba(220, 200, 200, 0.5) 18px 19px, transparent 19px 41px) 0 0 / 100% 140px; }
+@keyframes rain { to { transform: translate3d(-36px, 140px, 0); } }
 .embers3d { position: absolute; inset: 0; width: 100%; height: 100%; }
 .grain { position: absolute; inset: -50%; background-image: var(--noise); opacity: 0.07; mix-blend-mode: overlay; animation: grain 0.9s steps(4) infinite; }
 @keyframes grain { 25% { transform: translate(-3%, 2%); } 50% { transform: translate(2%, -3%); } 75% { transform: translate(-2%, -1%); } }
@@ -105,12 +107,12 @@ button { font-family: inherit; }
 
 /* Scroll story: a 3D rig (logo + orbiting cards) under a widening spotlight, with chapter captions */
 .story { height: 420vh; margin: 0 -16px; }
-.stage { position: sticky; top: 0; height: 100dvh; overflow: hidden; perspective: 1100px; perspective-origin: 50% 45%; }
+.story-stage { position: sticky; top: 0; height: 100vh; height: 100svh; overflow: hidden; perspective: 1100px; perspective-origin: 50% 45%; }
 .rig { position: absolute; inset: 0; transform-style: preserve-3d; will-change: transform; }
-.halo { position: absolute; inset: 0; margin: auto; width: min(92dvh, 112vw); height: min(92dvh, 112vw); border-radius: 50%; transform: translateZ(-220px);
+.halo { position: absolute; inset: 0; margin: auto; width: min(92svh, 112vw); height: min(92svh, 112vw); border-radius: 50%; transform: translateZ(-220px);
   background: radial-gradient(circle, rgba(211, 32, 42, 0.4), rgba(211, 32, 42, 0.1) 38%, transparent 64%); animation: halo 5s ease-in-out infinite; }
 @keyframes halo { 50% { opacity: 0.5; } }
-.logo-main { position: absolute; inset: 0; margin: auto; height: min(76dvh, 92vw); aspect-ratio: 1; will-change: transform, filter;
+.logo-main { position: absolute; inset: 0; margin: auto; height: min(76svh, 92vw); aspect-ratio: 1; will-change: transform, filter;
   filter: blur(var(--blur, 26px)) brightness(var(--lit, 0.08)) drop-shadow(0 0 var(--glow, 40px) rgba(211, 32, 42, 0.5)); }
 .k { --kw: clamp(62px, 8.5vw, 124px); --tone: var(--accent); position: absolute; inset: 0; margin: auto; width: var(--kw); height: calc(var(--kw) * 1.55); opacity: 0;
   border-radius: calc(var(--kw) * 0.08); display: grid; place-items: center; color: var(--tone); overflow: hidden;
@@ -175,5 +177,8 @@ button { font-family: inherit; }
 @media (hover: none), (max-width: 760px) {
   .grain { animation: none; mix-blend-mode: normal; }
   .fog { filter: none; }
-  .logo-main { filter: brightness(var(--lit, 0.08)); will-change: transform; }
+  .logo-main { filter: none; opacity: min(1, var(--lit, 0.3)); will-change: transform, opacity; }
+  .rain { opacity: 0.14; }
+  .stars { animation: none; }
+  .moon { box-shadow: 0 0 40px 10px rgba(211, 32, 42, 0.3), inset -12px -10px 24px rgba(60, 0, 4, 0.75); }
 }

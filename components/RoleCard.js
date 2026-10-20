@@ -12,7 +12,7 @@ export default function RoleCard({ role, size = 'md', className = '', dead = fal
     >
       {card ? (
         // eslint-disable-next-line @next/next/no-img-element
-        <img src={card.src} alt={alt ?? `${info.label} card`} width={720} height={Math.round(720 / card.ar)} decoding="async" draggable={false} />
+        <img src={size === 'sm' ? card.thumb : card.src} alt={alt ?? `${info.label} card`} width={720} height={Math.round(720 / card.ar)} decoding="async" loading={size === 'sm' ? 'lazy' : undefined} draggable={false} />
       ) : (
         <span className="rcard-fallback">{info.label}</span>
       )}

@@ -40,9 +40,19 @@
 .reveal-info p { margin: 0; color: #d9cdc8; }
 .reveal-info .goal b { margin-right: 6px; font: 700 0.9rem var(--font-hud); text-transform: uppercase; letter-spacing: 0.1em; color: var(--tone); }
 
+/* Phones: card and details side by side, so the whole reveal fits on one screen */
 @media (max-width: 760px) {
-  .deal-stage { grid-template-columns: minmax(0, 1fr); justify-items: center; gap: 20px; }
-  .deal-tilt { width: min(64vw, 270px, max(150px, calc((100dvh - 250px) * var(--ar, 0.64)))); }
+  .deal-stage { grid-template-columns: minmax(0, 46%) minmax(0, 1fr); align-items: start; gap: 14px; padding-top: 4px; }
+  .deal-tilt { width: 100%; }
+  .reveal-info { gap: 8px; transition-delay: 0.3s; }
+  .reveal-info .h-xl { font-size: clamp(1.6rem, 8vw, 2.3rem); }
+  .reveal-info p { font-size: 0.88rem; line-height: 1.4; }
+  .reveal-info .team-tag { padding: 3px 8px; font-size: 0.72rem; letter-spacing: 0.12em; }
+  .reveal-info small { font-size: 0.75rem; }
+}
+@media (max-width: 760px) and (min-height: 820px) {
+  .deal-stage { grid-template-columns: minmax(0, 1fr); justify-items: center; gap: 18px; }
+  .deal-tilt { width: min(64vw, 270px, max(150px, calc((100dvh - 330px) * var(--ar, 0.64)))); }
   .reveal-info { justify-items: center; text-align: center; }
 }
 
