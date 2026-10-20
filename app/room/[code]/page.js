@@ -7,7 +7,7 @@ import { useVoice } from '@/lib/useVoice';
 import { emit, setName, socket } from '@/lib/socket';
 import { play } from '@/lib/sound';
 import { recordGame } from '@/lib/stats';
-import { ROLES } from '@/lib/roles';
+import { ROLES, CARDS, roleInfo, mafiaCount, roleMix, preloadCards } from '@/lib/roles';
 import Backdrop from '@/components/Backdrop';
 import Timer from '@/components/Timer';
 import Chat from '@/components/Chat';
@@ -23,6 +23,8 @@ import PlayerRow from '@/components/PlayerRow';
 import VoicePanel, { PushToTalkFab } from '@/components/VoicePanel';
 import MafiaChat from '@/components/MafiaChat';
 import PoweredBy from '@/components/PoweredBy';
+import RoleCard, { CardBack } from '@/components/RoleCard';
+import KillCinematic from '@/components/KillCinematic';
 
 const PHASE = {
   LOBBY: ['Lobby', 'users'],
@@ -36,8 +38,6 @@ const PHASE = {
 };
 const DAYTIME = ['DAY_RESULT', 'DISCUSSION', 'VOTING', 'VOTE_RESULT'];
 const ROUND = ['NIGHT', 'DAY_RESULT', 'DISCUSSION', 'VOTING', 'VOTE_RESULT'];
-// Mirrors the server's role assignment (server/game/roles.js).
-const mafiaCount = (n) => (n <= 6 ? 1 : n <= 9 ? 2 : 3);
 
 // True on layouts wide enough to show the game and the side rail together (matches game.css).
 function useWide() {
@@ -71,15 +71,19 @@ export default function RoomPage() {
   const chatVisible = shown('chat');
   const mafiaVisible = shown('mafia');
 
-  // Sound cues on phase changes.
+  useEffect(() => { preloadCards(); }, []);
+
+  // Sound cues on phase changes. Deaths get their sound from the kill cinematic.
   const phase = state?.phase;
   useEffect(() => {
     if (!state) return;
     const r = state.result;
-    if (phase === 'ROLE_REVEAL') play('reveal');
+    if (phase === 'ROLE_REVEAL') {
+      play('reveal');
+      window.scrollTo({ top: 0 }); // the lobby may have been scrolled; start the reveal with the card in view
+    }
     else if (phase === 'NIGHT') play('night');
-    else if (phase === 'DAY_RESULT') play(r?.killedId ? 'death' : r?.saved ? 'saved' : 'day');
-    else if (phase === 'VOTE_RESULT' && r?.eliminatedId) play('death');
+    else if (phase === 'DAY_RESULT' && !r?.killedId) play(r?.saved ? 'saved' : 'day');
     else if (phase === 'GAME_OVER') {
       play(state.winner === state.you.team ? 'win' : 'lose');
       recordGame(state);
@@ -142,6 +146,7 @@ export default function RoomPage() {
     <main className={`g room ${day ? 'day' : ''}`}>
       <Backdrop day={day} />
       <PhaseSplash phase={state.phase} day={state.day} />
+      <KillCinematic state={state} />
       {!online && <div className="conn" role="alert"><Icon name="offline" /> Connection lost — reconnecting…</div>}
 
       <header className="hud">
@@ -332,6 +337,7 @@ function Timeline({ history }) {
                 ? <><b>{e.name}</b> {night ? 'was killed' : 'was voted out'} <RoleTag role={e.role} /></>
                 : night ? (e.saved ? <><Icon name="shield" /> The Doctor saved the target</> : 'A quiet night')
                 : e.tie ? 'A tie — nobody went' : 'Nobody was voted out'}
+              {e.theft && <span className="tl-theft"><RoleIcon role="THIEF" /> A role was stolen</span>}
             </span>
           </li>
         );
@@ -406,7 +412,7 @@ function Lobby({ state }) {
             </li>
           )))}
         </ul>
-        <RoleMix n={n} />
+        <RoleMix n={n} extras={state.extraRoles || []} />
       </section>
 
       {isHost ? (
@@ -431,10 +437,8 @@ function Lobby({ state }) {
 }
 
 // The roles that will be dealt for the current head count.
-function RoleMix({ n }) {
-  const seats = Math.max(n, 5);
-  const m = mafiaCount(seats);
-  const mix = [['MAFIA', m], ['DOCTOR', 1], ['DETECTIVE', 1], ['VILLAGER', seats - m - 2]];
+function RoleMix({ n, extras }) {
+  const mix = roleMix(Math.max(n, 5), extras);
   return (
     <div className="mix">
       <span className="label">Roles this game{n < 5 ? ' (at 5 players)' : ''}</span>
@@ -449,32 +453,49 @@ function RoleMix({ n }) {
 
 function RoleReveal({ state }) {
   const { role } = state.you;
-  const info = ROLES[role];
+  const info = roleInfo(role);
   const [flipped, setFlipped] = useState(false);
+  const [settled, setSettled] = useState(false);
+  const tilt = useRef(null);
   const mates = state.players.filter((p) => p.role === 'MAFIA' && p.id !== state.you.id);
   const m = mafiaCount(state.players.length);
   useEffect(() => {
-    const t = setTimeout(() => setFlipped(true), 900);
-    return () => clearTimeout(t);
+    const t1 = setTimeout(() => setFlipped(true), 900);
+    const t2 = setTimeout(() => setSettled(true), 1950); // after the flip, pointer tilt follows quickly
+    return () => { clearTimeout(t1); clearTimeout(t2); };
   }, []);
+
+  // The card leans toward the pointer (desktop only), like holding it in your hand.
+  function lean(e) {
+    if (!settled || !matchMedia('(hover: hover)').matches) return;
+    const r = e.currentTarget.getBoundingClientRect();
+    tilt.current?.style.setProperty('--rx', `${((e.clientY - r.top) / r.height - 0.5) * -12}deg`);
+    tilt.current?.style.setProperty('--ry', `${((e.clientX - r.left) / r.width - 0.5) * 14}deg`);
+  }
+  function rest() {
+    tilt.current?.style.setProperty('--rx', '0deg');
+    tilt.current?.style.setProperty('--ry', '0deg');
+  }
+
   return (
-    <div className="reveal">
-      <div className={`flip ${flipped ? 'flipped' : ''}`}>
-        <div className="flip-face back cut">
-          <span className="flip-mark">?</span>
-          <span className="label">Your secret role</span>
-        </div>
-        <div className={`flip-face front cut tone-${info.tone}`}>
-          <span className="label">Your role</span>
-          <span className="role-hero"><RoleIcon role={role} /></span>
-          <h1 className="h-xl">{info.label}</h1>
-          <span className="team-tag">Team {info.team}</span>
-          <p>{info.blurb}</p>
-          <p className="goal"><b>Goal</b> {info.goal}</p>
-          {role === 'MAFIA' && mates.length > 0 && <p className="intel bad"><Icon name="users" /> <span>Your team: <b>{mates.map((m) => m.name).join(', ')}</b></span></p>}
-          <small className="dim">{m} Mafia {m === 1 ? 'is' : 'are'} hiding among {state.players.length} players. Keep it secret — night begins soon.</small>
+    <div className={`deal-stage tone-${info.tone}`}>
+      <div className="deal-tilt" style={{ '--ar': CARDS[role]?.ar || 0.64 }} onPointerMove={lean} onPointerLeave={rest}>
+        <div ref={tilt} className={`deal ${flipped ? 'flipped' : ''} ${settled ? 'settled' : ''}`}>
+          <CardBack size="fill" className="deal-face deal-back" />
+          <div className="deal-face deal-front">
+            <RoleCard role={role} size="fill" className={flipped ? 'shine' : ''} />
+          </div>
         </div>
       </div>
+      <section className={`reveal-info ${flipped ? 'on' : ''}`} aria-live="polite">
+        <span className="label">Your secret role</span>
+        <h1 className="h-xl">{info.label}</h1>
+        <span className="team-tag">Team {info.team}</span>
+        <p>{info.blurb}</p>
+        <p className="goal"><b>Goal</b> {info.goal}</p>
+        {role === 'MAFIA' && mates.length > 0 && <p className="intel bad"><Icon name="users" /> <span>Your team: <b>{mates.map((x) => x.name).join(', ')}</b></span></p>}
+        <small className="dim">{m} Mafia {m === 1 ? 'is' : 'are'} hiding among {state.players.length} players. Keep it secret — night begins soon.</small>
+      </section>
     </div>
   );
 }
@@ -482,7 +503,7 @@ function RoleReveal({ state }) {
 function Night({ state }) {
   const { you, players } = state;
   const [err, setErr] = useState('');
-  const info = ROLES[you.role];
+  const info = roleInfo(you.role);
 
   async function pick(targetId) {
     const res = await emit('night_action', { targetId });
@@ -490,9 +511,9 @@ function Night({ state }) {
   }
 
   if (!you.alive) return <Notice icon="skull" label="Night" title="You are dead" text="Watch quietly. You can talk with the other ghosts in the chat." />;
-  if (!info.night) return <Notice icon="moon" label="Night" title="The town sleeps" text="Close your eyes. The Mafia, the Doctor and the Detective are making their moves." />;
+  if (!info.night) return <Notice icon="moon" label="Night" title="The town sleeps" text={you.role === 'JESTER' ? 'Rest up. Tomorrow you need the town to think you are the Mafia.' : 'Close your eyes. The Mafia, the Doctor and the Detective are making their moves.'} />;
 
-  const exclude = you.role === 'MAFIA' ? players.filter((p) => p.role === 'MAFIA').map((p) => p.id) : you.role === 'DETECTIVE' ? [you.id] : [];
+  const exclude = you.role === 'MAFIA' ? players.filter((p) => p.role === 'MAFIA').map((p) => p.id) : ['DETECTIVE', 'THIEF'].includes(you.role) ? [you.id] : [];
   const lastCheck = you.checks[you.checks.length - 1];
   const marks = {};
   for (const [mateId, targetId] of Object.entries(you.mafiaPicks || {})) {
@@ -507,6 +528,7 @@ function Night({ state }) {
         <h2 className="h-lg">{info.night.prompt}</h2>
       </div>
       {you.role === 'DETECTIVE' && lastCheck && <Intel check={lastCheck} players={players} />}
+      {you.role === 'THIEF' && <p className="intel"><RoleIcon role="THIEF" /> <span>You take their role at dawn and they become a Villager. Rob tonight’s victim and you get nothing.</span></p>}
       <TargetGrid players={players} youId={you.id} hostId={state.hostId} exclude={exclude} selectedId={you.nightTarget} onPick={pick} verb={info.night.verb} tone={info.tone} marks={marks} />
       <p className="status-line">
         {you.nightTarget ? <><Icon name="check" /> Locked in — you can change it until the timer ends.</> : 'Select a player.'}
@@ -535,8 +557,34 @@ function DayResult({ state }) {
     >
       {dead && <p className="reveal-role">They were <RoleTag role={r.killedRole} /></p>}
       {detCheck && <Intel check={detCheck} players={state.players} />}
+      {r?.theft && <p className="intel theft"><RoleIcon role="THIEF" /> <span>A thief struck in the night. Someone at this table is no longer who they were.</span></p>}
+      <Theft you={state.you} players={state.players} day={state.day} />
     </Notice>
   );
+}
+
+// Private news of the night's theft, for the Thief and for their victim.
+function Theft({ you, players, day }) {
+  if (you.stole?.day === day) {
+    const mark = players.find((p) => p.id === you.stole.targetId)?.name || '?';
+    return (
+      <p className="intel theft">
+        <RoleIcon role="THIEF" />
+        <span>You robbed <b>{mark}</b>. You are now the <RoleTag role={you.stole.role} />{you.stole.role === 'MAFIA' ? ' Your new family knows you.' : ''}</span>
+      </p>
+    );
+  }
+  if (you.robbed?.day === day) {
+    return (
+      <p className="intel bad">
+        <RoleIcon role="THIEF" />
+        {you.robbed.role === 'VILLAGER'
+          ? <span>The Thief broke in last night but found nothing worth taking. You are still a Villager.</span>
+          : <span>Your role was stolen. You were the <RoleTag role={you.robbed.role} /> and woke up a plain Villager.</span>}
+      </p>
+    );
+  }
+  return null;
 }
 
 function Discussion({ state }) {
@@ -553,6 +601,8 @@ function Discussion({ state }) {
     <div className="stack">
       <Notice icon="chat" label="Discussion" title="Who is the Mafia?" text="Talk it out in the chat. Voting opens when the timer runs out — or sooner, if most of the table wants to vote now.">
         {!you.alive && <p className="intel"><Icon name="skull" /> <span>You are dead — only ghosts can see your messages.</span></p>}
+        {you.alive && you.role === 'JESTER' && <p className="intel"><RoleIcon role="JESTER" /> <span>Play guilty. If the town votes you out, you win.</span></p>}
+        <Theft you={you} players={players} day={state.day} />
         <div className="ready-vote">
           {you.alive && (
             <button className={`b ${imReady ? 'b-ghost' : 'b-primary'}`} onClick={ready} aria-pressed={imReady}>
@@ -670,13 +720,16 @@ function VoteResult({ state }) {
 function GameOver({ state }) {
   const isHost = state.hostId === state.you.id;
   const won = state.winner === state.you.team;
+  const jester = state.winner === 'JESTER' ? state.players.find((p) => p.id === state.result?.eliminatedId) : null;
   return (
     <div className="stack">
       <section className={`panel cut finale ${won ? 'won' : 'lost'}`}>
         <span className="label">Game over{state.day > 0 ? ` · Day ${state.day}` : ''}</span>
         <h1 className="finale-title">{won ? 'Victory' : 'Defeat'}</h1>
-        <p className={`finale-sub ${state.winner === 'MAFIA' ? 't-red' : 't-gold'}`}>
-          {state.winner === 'MAFIA' ? 'The Mafia take the town' : 'The town is safe — the Villagers win'}
+        <p className={`finale-sub ${state.winner === 'MAFIA' ? 't-red' : state.winner === 'JESTER' ? 't-jester' : 't-gold'}`}>
+          {state.winner === 'MAFIA' ? 'The Mafia take the town'
+            : state.winner === 'JESTER' ? `The joke’s on you — ${jester?.name || 'the Jester'} was the Jester and wins alone`
+            : 'The town is safe — the Villagers win'}
         </p>
         <div className="finale-actions">
           {isHost
