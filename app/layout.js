@@ -13,7 +13,8 @@ export const metadata = {
   openGraph: { title: 'Mafia', description: 'Play Mafia with friends in your browser.' },
 };
 
-export const viewport = { width: 'device-width', initialScale: 1, themeColor: '#070405' };
+// `resizes-content`: when the phone keyboard opens, the page shrinks above it, so the chat box stays visible.
+export const viewport = { width: 'device-width', initialScale: 1, themeColor: '#070405', interactiveWidget: 'resizes-content' };
 
 export default function RootLayout({ children }) {
   return (

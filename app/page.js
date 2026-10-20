@@ -85,7 +85,7 @@ export default function Home() {
           onUpdate: (st) => setCap(EDGES.findIndex((a, i) => st.progress >= a && st.progress < EDGES[i + 1])),
         },
       })
-        .fromTo(logo.current, { '--blur': '26px', '--lit': 0.08, scale: 0.7, rotationX: 22 },
+        .fromTo(logo.current, { '--blur': '16px', '--lit': 0.3, scale: 0.7, rotationX: 22 },
           { '--blur': '0px', '--lit': 1, scale: 0.96, rotationX: 0, duration: 0.6 }, 0)
         .to(logo.current, { scale: 1.06, duration: 0.4 }, 0.6)
         .fromTo(spot.current, { '--r': '6%' }, { '--r': '62%', duration: 0.6 }, 0)
@@ -144,17 +144,17 @@ export default function Home() {
       </div>
 
       <section ref={story} className="story">
-        <div className="stage">
+        <div className="story-stage">
           <div ref={rig} className="rig">
             <div className="halo" />
             {CARDS.map(([role], i) => (
               <div key={role} className={`k tone-${ROLES[role].tone}`} aria-hidden="true">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={ART[role].src} alt="" width={720} height={Math.round(720 / ART[role].ar)} decoding="async" draggable={false} />
+                <img src={ART[role].thumb} alt="" width={256} height={Math.round(256 / ART[role].ar)} decoding="async" fetchPriority="low" draggable={false} />
               </div>
             ))}
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img ref={logo} className="logo-main" src="/logo.webp" alt="Mafia Game" />
+            <img ref={logo} className="logo-main" src="/logo.webp" alt="Mafia Game" width={820} height={820} fetchPriority="high" decoding="async" />
           </div>
           <div ref={spot} className="spot" />
           {CAPS.map(([k, h, t], i) => (

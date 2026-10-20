@@ -35,6 +35,9 @@ export default function Embers3D() {
     const pts = Array.from({ length: small ? 40 : 160 }, () => spawn({}, true));
 
     const size = () => {
+      // On phones the address bar changes the height while scrolling; reallocating the canvas
+      // for those few pixels each time causes stutter, so only a real resize counts.
+      if (small && w && innerWidth === w && Math.abs(innerHeight - h) < 160) return;
       const dpr = small ? 1 : Math.min(devicePixelRatio || 1, 1.5);
       w = innerWidth;
       h = innerHeight;
