@@ -7,7 +7,7 @@ import { useVoice } from '@/lib/useVoice';
 import { emit, setName, socket } from '@/lib/socket';
 import { play } from '@/lib/sound';
 import { recordGame } from '@/lib/stats';
-import { ROLES, roleInfo, mafiaCount, roleMix } from '@/lib/roles';
+import { ROLES, CARDS, roleInfo, mafiaCount, roleMix, preloadCards } from '@/lib/roles';
 import Backdrop from '@/components/Backdrop';
 import Timer from '@/components/Timer';
 import Chat from '@/components/Chat';
@@ -23,6 +23,8 @@ import PlayerRow from '@/components/PlayerRow';
 import VoicePanel, { PushToTalkFab } from '@/components/VoicePanel';
 import MafiaChat from '@/components/MafiaChat';
 import PoweredBy from '@/components/PoweredBy';
+import RoleCard, { CardBack } from '@/components/RoleCard';
+import KillCinematic from '@/components/KillCinematic';
 
 const PHASE = {
   LOBBY: ['Lobby', 'users'],
@@ -69,15 +71,19 @@ export default function RoomPage() {
   const chatVisible = shown('chat');
   const mafiaVisible = shown('mafia');
 
-  // Sound cues on phase changes.
+  useEffect(() => { preloadCards(); }, []);
+
+  // Sound cues on phase changes. Deaths get their sound from the kill cinematic.
   const phase = state?.phase;
   useEffect(() => {
     if (!state) return;
     const r = state.result;
-    if (phase === 'ROLE_REVEAL') play('reveal');
+    if (phase === 'ROLE_REVEAL') {
+      play('reveal');
+      window.scrollTo({ top: 0 }); // the lobby may have been scrolled; start the reveal with the card in view
+    }
     else if (phase === 'NIGHT') play('night');
-    else if (phase === 'DAY_RESULT') play(r?.killedId ? 'death' : r?.saved ? 'saved' : 'day');
-    else if (phase === 'VOTE_RESULT' && r?.eliminatedId) play('death');
+    else if (phase === 'DAY_RESULT' && !r?.killedId) play(r?.saved ? 'saved' : 'day');
     else if (phase === 'GAME_OVER') {
       play(state.winner === state.you.team ? 'win' : 'lose');
       recordGame(state);
@@ -140,6 +146,7 @@ export default function RoomPage() {
     <main className={`g room ${day ? 'day' : ''}`}>
       <Backdrop day={day} />
       <PhaseSplash phase={state.phase} day={state.day} />
+      <KillCinematic state={state} />
       {!online && <div className="conn" role="alert"><Icon name="offline" /> Connection lost — reconnecting…</div>}
 
       <header className="hud">
@@ -448,30 +455,47 @@ function RoleReveal({ state }) {
   const { role } = state.you;
   const info = roleInfo(role);
   const [flipped, setFlipped] = useState(false);
+  const [settled, setSettled] = useState(false);
+  const tilt = useRef(null);
   const mates = state.players.filter((p) => p.role === 'MAFIA' && p.id !== state.you.id);
   const m = mafiaCount(state.players.length);
   useEffect(() => {
-    const t = setTimeout(() => setFlipped(true), 900);
-    return () => clearTimeout(t);
+    const t1 = setTimeout(() => setFlipped(true), 900);
+    const t2 = setTimeout(() => setSettled(true), 1950); // after the flip, pointer tilt follows quickly
+    return () => { clearTimeout(t1); clearTimeout(t2); };
   }, []);
+
+  // The card leans toward the pointer (desktop only), like holding it in your hand.
+  function lean(e) {
+    if (!settled || !matchMedia('(hover: hover)').matches) return;
+    const r = e.currentTarget.getBoundingClientRect();
+    tilt.current?.style.setProperty('--rx', `${((e.clientY - r.top) / r.height - 0.5) * -12}deg`);
+    tilt.current?.style.setProperty('--ry', `${((e.clientX - r.left) / r.width - 0.5) * 14}deg`);
+  }
+  function rest() {
+    tilt.current?.style.setProperty('--rx', '0deg');
+    tilt.current?.style.setProperty('--ry', '0deg');
+  }
+
   return (
-    <div className="reveal">
-      <div className={`flip ${flipped ? 'flipped' : ''}`}>
-        <div className="flip-face back cut">
-          <span className="flip-mark">?</span>
-          <span className="label">Your secret role</span>
-        </div>
-        <div className={`flip-face front cut tone-${info.tone}`}>
-          <span className="label">Your role</span>
-          <span className="role-hero"><RoleIcon role={role} /></span>
-          <h1 className="h-xl">{info.label}</h1>
-          <span className="team-tag">Team {info.team}</span>
-          <p>{info.blurb}</p>
-          <p className="goal"><b>Goal</b> {info.goal}</p>
-          {role === 'MAFIA' && mates.length > 0 && <p className="intel bad"><Icon name="users" /> <span>Your team: <b>{mates.map((m) => m.name).join(', ')}</b></span></p>}
-          <small className="dim">{m} Mafia {m === 1 ? 'is' : 'are'} hiding among {state.players.length} players. Keep it secret — night begins soon.</small>
+    <div className={`deal-stage tone-${info.tone}`}>
+      <div className="deal-tilt" style={{ '--ar': CARDS[role]?.ar || 0.64 }} onPointerMove={lean} onPointerLeave={rest}>
+        <div ref={tilt} className={`deal ${flipped ? 'flipped' : ''} ${settled ? 'settled' : ''}`}>
+          <CardBack size="fill" className="deal-face deal-back" />
+          <div className="deal-face deal-front">
+            <RoleCard role={role} size="fill" className={flipped ? 'shine' : ''} />
+          </div>
         </div>
       </div>
+      <section className={`reveal-info ${flipped ? 'on' : ''}`} aria-live="polite">
+        <span className="label">Your secret role</span>
+        <h1 className="h-xl">{info.label}</h1>
+        <span className="team-tag">Team {info.team}</span>
+        <p>{info.blurb}</p>
+        <p className="goal"><b>Goal</b> {info.goal}</p>
+        {role === 'MAFIA' && mates.length > 0 && <p className="intel bad"><Icon name="users" /> <span>Your team: <b>{mates.map((x) => x.name).join(', ')}</b></span></p>}
+        <small className="dim">{m} Mafia {m === 1 ? 'is' : 'are'} hiding among {state.players.length} players. Keep it secret — night begins soon.</small>
+      </section>
     </div>
   );
 }
@@ -554,7 +578,9 @@ function Theft({ you, players, day }) {
     return (
       <p className="intel bad">
         <RoleIcon role="THIEF" />
-        <span>Your role was stolen. You were the <RoleTag role={you.robbed.role} /> and woke up a plain Villager.</span>
+        {you.robbed.role === 'VILLAGER'
+          ? <span>The Thief broke in last night but found nothing worth taking. You are still a Villager.</span>
+          : <span>Your role was stolen. You were the <RoleTag role={you.robbed.role} /> and woke up a plain Villager.</span>}
       </p>
     );
   }

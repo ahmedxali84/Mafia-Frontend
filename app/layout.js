@@ -1,6 +1,7 @@
 import { Barlow_Condensed, Cinzel, Inter } from 'next/font/google';
 import './globals.css';
 import './game.css';
+import './cards.css';
 
 const display = Cinzel({ subsets: ['latin'], weight: ['600', '800'], variable: '--font-display' });
 const hud = Barlow_Condensed({ subsets: ['latin'], weight: ['500', '600', '700'], variable: '--font-hud' });

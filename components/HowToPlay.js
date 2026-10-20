@@ -2,7 +2,7 @@
 import { useEffect, useRef } from 'react';
 import { ROLES } from '@/lib/roles';
 import Icon from './Icon';
-import RoleIcon from './RoleIcon';
+import RoleCard from './RoleCard';
 
 const ROUND = [
   ['moon', 'Night', 'Mafia pick a victim. The Doctor protects someone. The Detective investigates someone. On the first night the Thief steals a role.'],
@@ -54,7 +54,7 @@ export default function HowToPlay({ onClose }) {
             <ul className="role-list">
               {Object.entries(ROLES).map(([key, r]) => (
                 <li key={key} className={`tone-${r.tone}`}>
-                  <span className="role-glyph"><RoleIcon role={key} /></span>
+                  <RoleCard role={key} size="sm" alt="" />
                   <div>
                     <b>{r.label}</b> <small>· {r.team}</small>
                     <p>{r.blurb}</p>

@@ -112,11 +112,13 @@ button { font-family: inherit; }
 @keyframes halo { 50% { opacity: 0.5; } }
 .logo-main { position: absolute; inset: 0; margin: auto; height: min(76dvh, 92vw); aspect-ratio: 1; will-change: transform, filter;
   filter: blur(var(--blur, 26px)) brightness(var(--lit, 0.08)) drop-shadow(0 0 var(--glow, 40px) rgba(211, 32, 42, 0.5)); }
-.k { --kw: clamp(62px, 8.5vw, 124px); --tone: var(--accent); position: absolute; inset: 0; margin: auto; width: var(--kw); height: calc(var(--kw) * 1.4); opacity: 0;
-  border-radius: calc(var(--kw) * 0.08); display: grid; place-items: center; color: var(--tone);
+.k { --kw: clamp(62px, 8.5vw, 124px); --tone: var(--accent); position: absolute; inset: 0; margin: auto; width: var(--kw); height: calc(var(--kw) * 1.55); opacity: 0;
+  border-radius: calc(var(--kw) * 0.08); display: grid; place-items: center; color: var(--tone); overflow: hidden;
   background: radial-gradient(circle at 50% 38%, color-mix(in srgb, var(--tone) 22%, #1a0a0c), #0c0506 75%);
   box-shadow: inset 0 0 0 calc(var(--kw) * 0.03) color-mix(in srgb, var(--tone) 70%, transparent), inset 0 0 0 calc(var(--kw) * 0.06) #0c0506,
     inset 0 0 0 calc(var(--kw) * 0.07) color-mix(in srgb, var(--tone) 30%, transparent), 0 30px 60px rgba(0, 0, 0, 0.75), 0 0 40px color-mix(in srgb, var(--tone) 30%, transparent); }
+.k img { position: absolute; inset: calc(var(--kw) * 0.03); width: calc(100% - var(--kw) * 0.06); height: calc(100% - var(--kw) * 0.06); object-fit: cover; object-position: 50% 30%;
+  border-radius: calc(var(--kw) * 0.05); user-select: none; }
 .k span { font-size: calc(var(--kw) * 0.5); line-height: 1; margin-bottom: 14%; filter: drop-shadow(0 0 calc(var(--kw) * 0.08) color-mix(in srgb, var(--tone) 60%, transparent)); }
 .k i { position: absolute; bottom: 15%; left: 0; right: 0; text-align: center; font: 800 calc(var(--kw) * 0.12) var(--font-display); font-style: normal; letter-spacing: 0.12em; text-transform: uppercase; color: #f4ebe2; }
 .k b { position: absolute; top: 7%; left: 9%; font-size: calc(var(--kw) * 0.15); line-height: 1; }
