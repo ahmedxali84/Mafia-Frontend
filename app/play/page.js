@@ -5,6 +5,8 @@ import Link from 'next/link';
 import { socket, emit, getPlayerId, getName, setName } from '@/lib/socket';
 import { getStats } from '@/lib/stats';
 import { rankOf, EXTRA_ROLES } from '@/lib/roles';
+import { authToken } from '@/lib/account';
+import AccountBox from '@/components/AccountBox';
 import { play } from '@/lib/sound';
 import Backdrop from '@/components/Backdrop';
 import MenuBar from '@/components/MenuBar';
@@ -64,7 +66,7 @@ export default function Play() {
           socket.once('connect_error', () => reject(new Error('Cannot reach the game server')));
         });
       }
-      const res = await emit('create_room', { playerId: getPlayerId(), name: name.trim(), bots, roles: EXTRA_ROLES });
+      const res = await emit('create_room', { playerId: getPlayerId(), name: name.trim(), bots, roles: EXTRA_ROLES, authToken: await authToken() });
       socket.disconnect(); // the room page opens its own connection
       if (res.error) throw new Error(res.error);
       router.push(`/room/${res.code}`);
@@ -125,6 +127,7 @@ export default function Play() {
             <div><dt>Wins</dt><dd>{stats.wins}</dd></div>
             <div><dt>Win rate</dt><dd>{winRate}%</dd></div>
           </dl>
+          <AccountBox />
           <Link href="/stats" className="b b-ghost b-block"><Icon name="chart" /> View career</Link>
         </aside>
 

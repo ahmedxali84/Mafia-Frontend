@@ -8,11 +8,12 @@ import PoweredBy from '@/components/PoweredBy';
 import RoleIcon from '@/components/RoleIcon';
 import { ROLES, rankOf } from '@/lib/roles';
 import { getStats, resetStats } from '@/lib/stats';
+import { fetchServerStats } from '@/lib/account';
 
 const pct = (w, g) => (g ? Math.round((w / g) * 100) : 0);
 
 function ago(t) {
-  const m = Math.round((Date.now() - t) / 60000);
+  const m = Math.round((Date.now() - new Date(t).getTime()) / 60000); // ms timestamp or ISO date (server)
   if (m < 1) return 'Just now';
   if (m < 60) return `${m} min ago`;
   const h = Math.round(m / 60);
@@ -23,12 +24,24 @@ function ago(t) {
 
 export default function Career() {
   const [stats, setStats] = useState(null);
+  const [saved, setSaved] = useState(false); // true: these are the account's stats from the server
   const [confirm, setConfirm] = useState(false);
   const confirmTimer = useRef(0);
 
+  // Signed in with Google (and the server has a database): show the account's stats, which follow
+  // the player to any device. Otherwise the stats kept in this browser.
   useEffect(() => {
+    let live = true;
     setStats(getStats());
-    return () => clearTimeout(confirmTimer.current);
+    fetchServerStats().then((s) => {
+      if (!live || !s) return;
+      setStats({ ...s, byRole: s.byRole || {}, recent: s.recent || [] });
+      setSaved(true);
+    });
+    return () => {
+      live = false;
+      clearTimeout(confirmTimer.current);
+    };
   }, []);
 
   // Two-step reset: the first click arms the button for a few seconds.
@@ -72,7 +85,7 @@ export default function Career() {
           <div className="panel cut empty-state">
             <Icon name="trophy" />
             <b>No games on record yet</b>
-            <p className="dim">Finish a game and your record shows up here. Stats are kept in this browser.</p>
+            <p className="dim">Finish a game and your record shows up here. {saved ? 'They are saved to your account.' : 'Stats are kept in this browser.'}</p>
             <Link className="b b-primary" href="/play"><Icon name="play" /> Play now</Link>
           </div>
         ) : (
@@ -125,10 +138,16 @@ export default function Career() {
             </div>
 
             <div className="career-foot">
-              <p className="dim small">Stats are saved in this browser only.</p>
-              <button className={`b b-sm ${confirm ? 'b-danger' : 'b-ghost'}`} onClick={reset}>
-                {confirm ? 'Click again to erase everything' : 'Reset stats'}
-              </button>
+              {saved ? (
+                <p className="dim small"><Icon name="check" /> Saved to your Google account, on every device.</p>
+              ) : (
+                <>
+                  <p className="dim small">Stats are saved in this browser only. Sign in with Google on the Play screen to keep them on every device.</p>
+                  <button className={`b b-sm ${confirm ? 'b-danger' : 'b-ghost'}`} onClick={reset}>
+                    {confirm ? 'Click again to erase everything' : 'Reset stats'}
+                  </button>
+                </>
+              )}
             </div>
           </>
         )}
