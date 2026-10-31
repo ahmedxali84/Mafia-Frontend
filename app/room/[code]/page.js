@@ -611,7 +611,9 @@ function Discussion({ state }) {
               <Icon name={imReady ? 'check' : 'ballot'} /> {imReady ? 'Vote now — undo' : 'Vote now'}
             </button>
           )}
-          <span className="dim small">{readyN}/{need} want to vote now · at {need} the timer stops and voting starts</span>
+          {humans.length
+            ? <span className="dim small">{readyN}/{need} want to vote now · at {need} the timer stops and voting starts</span>
+            : <span className="dim small">Only bots are left alive · voting starts in a few seconds</span>}
         </div>
       </Notice>
       {state.history.length > 0 && (
