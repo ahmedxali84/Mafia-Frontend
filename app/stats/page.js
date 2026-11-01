@@ -85,7 +85,7 @@ export default function Career() {
           <div className="panel cut empty-state">
             <Icon name="trophy" />
             <b>No games on record yet</b>
-            <p className="dim">Finish a game and your record shows up here. {saved ? 'They are saved to your account.' : 'Stats are kept in this browser.'}</p>
+            <p className="dim">Finish a game and your record shows up here. {saved ? 'Games with at least one other person are saved to your account; you alone against bots is practice.' : 'Stats are kept in this browser.'}</p>
             <Link className="b b-primary" href="/play"><Icon name="play" /> Play now</Link>
           </div>
         ) : (
@@ -139,7 +139,7 @@ export default function Career() {
 
             <div className="career-foot">
               {saved ? (
-                <p className="dim small"><Icon name="check" /> Saved to your Google account, on every device.</p>
+                <p className="dim small"><Icon name="check" /> Saved to your Google account, on every device. Games you play alone against bots are practice and are not added.</p>
               ) : (
                 <>
                   <p className="dim small">Stats are saved in this browser only. Sign in with Google on the Play screen to keep them on every device.</p>

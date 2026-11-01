@@ -2,7 +2,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { socket, emit, getPlayerId, getName, setName } from '@/lib/socket';
+import { socket, emit, getPlayerId, getPlayerSecret, getName, setName } from '@/lib/socket';
 import { getStats } from '@/lib/stats';
 import { rankOf, EXTRA_ROLES } from '@/lib/roles';
 import { authToken } from '@/lib/account';
@@ -66,7 +66,7 @@ export default function Play() {
           socket.once('connect_error', () => reject(new Error('Cannot reach the game server')));
         });
       }
-      const res = await emit('create_room', { playerId: getPlayerId(), name: name.trim(), bots, roles: EXTRA_ROLES, authToken: await authToken() });
+      const res = await emit('create_room', { playerId: getPlayerId(), secret: getPlayerSecret(), name: name.trim(), bots, roles: EXTRA_ROLES, authToken: await authToken() });
       socket.disconnect(); // the room page opens its own connection
       if (res.error) throw new Error(res.error);
       router.push(`/room/${res.code}`);
